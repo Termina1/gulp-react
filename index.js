@@ -7,6 +7,9 @@ var reactDomPragma = require('react-dom-pragma');
 var applySourceMap = require('vinyl-sourcemaps-apply');
 
 module.exports = function (options) {
+	if(typeof(options) === 'undefined') {
+		options = {};
+	}
 	return through.obj(function (file, enc, cb) {
 		if (file.isNull()) {
 			cb(null, file);
@@ -26,15 +29,18 @@ module.exports = function (options) {
 		}
 
 		try {
-			if(file.sourceMaps) {
+			if(file.sourceMap) {
 				options.sourceMap = true;
+				options.filename = file.relative;
+				options.sourceName = file.relative;
+				options.sourceContent = true;
 			}
-			var result = react.transform(str, options);
-			file.contents = new Buffer(result.code);
-			if(file.sourceMaps) {
+			var result = react.transformWithDetails(str, options);
+			if(file.sourceMap) {
 				applySourceMap(file, result.sourceMap);
 			}
-			file.path = gutil.replaceExtension(filePath, '.js');
+			file.contents = new Buffer(result.code);
+			file.path = filePath;
 			cb(null, file);
 		} catch (err) {
 			cb(new gutil.PluginError('gulp-react', err, {
